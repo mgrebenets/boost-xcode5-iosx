@@ -1,4 +1,9 @@
 # git ignore
 src/
-*.tag.bz2
+*.tar.bz2
 *.zip
+build/
+ios/
+osx/
+bak/
+dist/
