@@ -1,0 +1,4 @@
+# git ignore
+src/
+*.tag.bz2
+*.zip
