@@ -1,19 +1,26 @@
-Boost iOS/OSX compilation
+Build Boost Framework for iOS 
 =====
+###### Using Xcode5 (armv7, armv7s, arm64, i386)
 
-### C/CXX flags:
-* -DBOOST_AC_USE_PTHREADS -DBOOST_SP_USE_PTHREADS -std=c++11
-* -fvisibility=hidden -fvisibility-inlines-hidden
-* -stdlib=libc++ -- GNU STL C++ lib
+### Boost Source
+TODO:
 
-### Framework
-* iOS universal build including: armv6/armv7/armv7s/i386 - needs latest XCode (4.6+)
-* OSX universal build including: i386/x86_64
+### Build
+TODO: 
 
-### Install
-Run boost.sh on the project folder, it'll look for the Xcode by 'xcode-select' and pick up the latest iOS SDK by 'xcodebuild -showsdks'
-Currently, only a subset of libraries will be compilied (BOOST_LIBS)
+## Notes and Changes
+TODO:
 
-Two frameworks will be generated under the ios/framework and osx/framework. When using it, link against the framework.
+## OS X
+TODO:
 
-A few set of settings are in the front.
+## References and Attribution
+This repo is practially a fork of https://github.com/wuhao5/boost.
+Only this one does not contain boost source code, thus is more lightweight.
+
+The script mentioned above in it's turn is based on great work by Pete Goodliffe
+* https://gitorious.org/boostoniphone
+* http://goodliffe.blogspot.com.au/2010/09/building-boost-framework-for-ios-iphone.html
+* http://goodliffe.blogspot.com.au/2009/12/boost-on-iphone.html
+
+And lots of contributions by other people.
