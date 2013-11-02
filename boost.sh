@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #===============================================================================
 # Filename:  boost.sh
 # Author:    Pete Goodliffe
@@ -19,12 +21,59 @@
 # same directory as this script, and run "./boost.sh". Grab a cuppa. And voila.
 #===============================================================================
 
+# Arguments
+# download - not yet implemented
+# clean
+# --with-c++11 - Compile using Clang, std=c++11 and stdlib=libc++
+# not yet implemented - build ios or osx only
+
+DOWNLOAD=0
+CLEAN=0
+CPP11_FLAGS=""
+VERSION=""
+BUILD_IOS=1
+BUILD_OSX=1
+
+usage () {
+    echo "Usage: ${0##*/} [clean] [-h|--help] [--with-c++11] -v|--version VERSION" 1>&2
+    echo "Options:" 1>&2
+    echo -e "\t-h, --help\t\t\t\tPrint complete usage." 1>&2
+    echo -e "\tclean\t\t\tPerform clean build." 1>&2
+    echo -e "\t--with-c++11\t\t\t\tCompile using Clang, std=c++11 and stdlib=libc++." 1>&2
+    echo -e "\t-v, --version VERSION\t\t\tVersion to build. Make sure you have boost_<VERSION>.tar.bz2 downloaded and ready." 1>&2
+    exit 2
+}
+
+while [ "$1" != "" ]; do
+    case $1 in
+        --with-c++11 ) CPP11_FLAGS="-std=c++11 -stdlib=libc++"
+                    ;;
+        clean )    echo "setting clean to 1" && CLEAN=1
+                    ;;
+        download )    DOWNLOAD=1
+                    ;;
+        -v | --version ) shift
+                        VERSION=$1
+                        ;;
+        -h | --help ) usage
+                        exit
+                        ;;
+        * )         usage
+                    exit 1
+    esac
+    # next arg
+    shift
+done
+
+# Version is mandatory
+[ -z $VERSION ] && usage
+
 # : ${BOOST_LIBS:="graph random chrono thread signals filesystem regex system date_time"}
 : ${BOOST_LIBS:="serialization"}
 : ${IPHONE_SDKVERSION:=$(xcodebuild -showsdks | grep iphoneos | egrep "[[:digit:]]+\.[[:digit:]]+" -o | tail -1)}
 : ${OSX_SDKVERSION:=10.8}
 : ${XCODE_ROOT:=$(xcode-select -print-path)}
-: ${EXTRA_CPPFLAGS:="-DBOOST_AC_USE_PTHREADS -DBOOST_SP_USE_PTHREADS -std=c++11 -stdlib=libc++"}
+: ${EXTRA_CPPFLAGS:="-DBOOST_AC_USE_PTHREADS -DBOOST_SP_USE_PTHREADS $CPP11_FLAGS"}
 # : ${EXTRA_CPPFLAGS:="-DBOOST_AC_USE_PTHREADS -DBOOST_SP_USE_PTHREADS"}
 
 # The EXTRA_CPPFLAGS definition works around a thread race issue in
@@ -45,7 +94,7 @@
 : ${COMPILER:="clang++"}
 
 BOOST_SRC=$SRCDIR/boost
-: ${BOOST_VERSION:=$1}
+: ${BOOST_VERSION:=$VERSION}
 BOOST_VERSION_SFX=${BOOST_VERSION//./_}
 
 BOOST_TARBALL=$TARBALLDIR/boost_$BOOST_VERSION_SFX.tar.bz2
@@ -97,6 +146,15 @@ cleanEverythingReadyToStart()
 }
 
 #===============================================================================
+downloadBoost()
+{
+    echo Downloading boost $BOOST_TARBALL...
+    # TODO: implement
+    # don't download if the tarball is already there
+    doneSection
+}
+
+#===============================================================================
 unpackBoost()
 {
     echo Unpacking boost into $SRCDIR...
@@ -123,7 +181,10 @@ writeBjamUserConfig()
 #    : <architecture>arm <target-os>iphone
 #    ;
 
-	cp $BOOST_SRC/tools/build/v2/user-config.jam $SRCDIR/tools/build/v2/user-config.jam-bk
+    # use sed cut stuff if it's already there to avoid duplicated entries
+    sed -i.bak '/# BOOST/,$d' $BOOST_SRC/tools/build/v2/user-config.jam
+
+	cp $BOOST_SRC/tools/build/v2/user-config.jam $BOOST_SRC/tools/build/v2/user-config.jam-bk
 	cat >> $BOOST_SRC/tools/build/v2/user-config.jam <<EOF
 # BOOST
 using darwin : ${IPHONE_SDKVERSION}~iphone
@@ -148,7 +209,7 @@ inventMissingHeaders()
     # These files are missing in the ARM iPhoneOS SDK, but they are in the simulator.
     # They are supported on the device, so we copy them from x86 SDK to a staging area
     # to use them on ARM, too.
-    echo Invent missing headers
+    echo "Invent missing headers"
     cp $XCODE_ROOT/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator${IPHONE_SDKVERSION}.sdk/usr/include/{crt_externs,bzlib}.h $BOOST_SRC
 }
 
@@ -165,7 +226,7 @@ bootstrapBoost()
 
 #===============================================================================
 
-buildBoostForiPhoneOS()
+buildBoost()
 {
     cd $BOOST_SRC
 
@@ -237,15 +298,14 @@ scrunchAllLibsTogetherInOneLibPerPlatform()
     echo ...arm64
     (cd $IOSBUILDDIR/arm64; $ARM_DEV_DIR/ar crus libboost.a obj/*.o; )
     echo ...i386
-    # (cd $IOSBUILDDIR/i386;  $SIM_DEV_DIR/ar crus libboost.a obj/*.o; )
-    (cd $IOSBUILDDIR/i386;  ar crus libboost.a obj/*.o; )
+    (cd $IOSBUILDDIR/i386; ar crus libboost.a obj/*.o; )
 
-    # rm $OSXBUILDDIR/*/libboost.a
-    # echo ...osx-i386
-    # (cd $OSXBUILDDIR/i386;  $SIM_DEV_DIR/ar crus libboost.a obj/*.o; )
+    rm $OSXBUILDDIR/*/libboost.a
+    echo ...osx-i386
+    (cd $OSXBUILDDIR/i386; ar crus libboost.a obj/*.o; )
 
-    # echo ...x86_64
-    # (cd $OSXBUILDDIR/x86_64;  $SIM_DEV_DIR/ar crus libboost.a obj/*.o; )
+    echo ...x86_64
+    (cd $OSXBUILDDIR/x86_64; ar crus libboost.a obj/*.o; )
 }
 
 #===============================================================================
@@ -309,7 +369,7 @@ buildFramework()
     $ARM_DEV_DIR/lipo -create $BUILDDIR/*/libboost.a -o "$FRAMEWORK_INSTALL_NAME" || abort "Lipo $1 failed"
 
     echo "Framework: Copying includes..."
-    cp -r $PREFIXDIR/include/boost/*  $FRAMEWORK_BUNDLE/Headers/
+    cp -r $PREFIXDIR/include/boost/* $FRAMEWORK_BUNDLE/Headers/
 
     echo "Framework: Creating plist..."
     cat > $FRAMEWORK_BUNDLE/Resources/Info.plist <<EOF
@@ -341,10 +401,6 @@ EOF
 # Execution starts here
 #===============================================================================
 
-mkdir -p $IOSBUILDDIR
-
-cleanEverythingReadyToStart
-
 #BOOST_VERSION=`svn info $BOOST_SRC | grep URL | sed -e 's/^.*\/Boost_\([^\/]*\)/\1/'`
 echo "BOOST_VERSION:     $BOOST_VERSION"
 echo "BOOST_VERSION_SFX: $BOOST_VERSION_SFX"
@@ -359,20 +415,24 @@ echo "OSXFRAMEWORKDIR:   $OSXFRAMEWORKDIR"
 echo "IPHONE_SDKVERSION: $IPHONE_SDKVERSION"
 echo "XCODE_ROOT:        $XCODE_ROOT"
 echo "COMPILER:          $COMPILER"
+echo "CLEAN:             $CLEAN"
+# echo "BUILD_IOS:         $BUILD_IOS"
+# echo "BUILD_OSX:         $BUILD_OSX"
 echo
 
+[[ $DOWNLOAD -eq 1 ]] && downloadBoost
 #inventMissingHeaders
-cleanEverythingReadyToStart
+[[ $CLEAN -eq 1 ]] && cleanEverythingReadyToStart
 unpackBoost
 bootstrapBoost
 writeBjamUserConfig
-buildBoostForiPhoneOS
+buildBoost
 scrunchAllLibsTogetherInOneLibPerPlatform
 # lipoAllBoostLibraries
-buildFramework $IOSFRAMEWORKDIR $IOSBUILDDIR
-# buildFramework $OSXFRAMEWORKDIR $OSXBUILDDIR
+[[ $BUILD_IOS -eq 1 ]] && buildFramework $IOSFRAMEWORKDIR $IOSBUILDDIR
+[[ $BUILD_OSX -eq 1 ]] && buildFramework $OSXFRAMEWORKDIR $OSXBUILDDIR
 
-restoreBoost
+# restoreBoost
 echo "Completed successfully"
 
 #===============================================================================
