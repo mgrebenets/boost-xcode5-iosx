@@ -38,6 +38,7 @@ Under *Apple LLVM 5.0 - Language - C++* make the following changes
 
 * *C++ Language Dialect* set to *C++11 [-std=c++11]*
 * *C++ Standard Library* set to *libc++ (LLVM C++ standard library with C++11 support)*
+
 ### `ar` for Simulator Dev Tools
 In Xcode 5 there's no `ar` excutable in `SIM_DEV_DIR` so using `/usr/bin/ar` instead.
 
