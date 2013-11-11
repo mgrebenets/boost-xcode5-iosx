@@ -42,6 +42,17 @@ Under *Apple LLVM 5.0 - Language - C++* make the following changes
 ### `ar` for Simulator Dev Tools
 In Xcode 5 there's no `ar` excutable in `SIM_DEV_DIR` so using `/usr/bin/ar` instead.
 
+## Why not Using Cocoapods?
+I tried to use [cocoapods spec for boost](https://github.com/CocoaPods/Specs/tree/master/boost).
+However, there's a number of things that made me to switch to using framework instead.
+* It doesn't include all the subspecs you might need for development
+* It takes really long time to update every time you run `pod update` or `pod install` (given that you have modified `Podfile`)
+  * The tar-ball is downloaded (50+ mb)
+  * The tag-ball is unpacked
+* There's podspec for 1.51.0 only
+* You can't use the Pod if you need libraries like `serialization`
+  * `serialization` has to be linked as a library, it doesn't work like the rest of the boost libraries by just including hpp headers inline. It needs to be compiled for your target platform.
+
 ## References and Attribution
 This repo is practially a fork of https://github.com/wuhao5/boost.
 Only this one does not contain boost source code, thus is more lightweight.
