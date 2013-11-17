@@ -69,8 +69,8 @@ done
 [ -z $VERSION ] && usage
 
 # : ${BOOST_LIBS:="graph random chrono thread signals filesystem regex system date_time"}
-: ${BOOST_LIBS:="serialization"}
-# : ${BOOST_LIBS:="atomic chrono date_time exception filesystem graph graph_parallel iostreams locale mpi program_options python random regex serialization signals system test thread timer wave"}
+: ${BOOST_LIBS:="atomic chrono date_time exception filesystem graph graph_parallel iostreams locale mpi program_options python random regex serialization signals system test thread timer wave"}
+#atomic chrono context coroutine date_time exception filesystem graph graph_parallel iostreams locale log math mpi program_options python random regex serialization signals system test thread timer wave
 : ${IPHONE_SDKVERSION:=$(xcodebuild -showsdks | grep iphoneos | egrep "[[:digit:]]+\.[[:digit:]]+" -o | tail -1)}
 : ${OSX_SDKVERSION:=10.8}
 : ${XCODE_ROOT:=$(xcode-select -print-path)}
@@ -247,6 +247,50 @@ buildBoost()
 }
 
 #===============================================================================
+unpackArchive_ios()
+{
+    ARCH=$1
+    NAME=$2
+
+    echo "Unpacking $NAME"
+
+    mkdir -p $IOSBUILDDIR/$ARCH/obj/$NAME
+#remove all trash in folder if exists
+    rm $IOSBUILDDIR/$ARCH/obj/$NAME/*.o
+    rm $IOSBUILDDIR/$ARCH/obj/$NAME/*.SYMDEF*
+
+
+    (
+        cd $IOSBUILDDIR/$ARCH/obj/$NAME;  ar -x ../../$NAME.a;
+            for FILE in *.o; do
+                NEW_FILE="${NAME}_${FILE}"
+                mv $FILE $NEW_FILE
+            done
+    );
+}
+
+unpackArchive_osx()
+{
+    ARCH=$1
+    NAME=$2
+
+    echo "Unpacking $NAME"
+
+    mkdir -p $OSXBUILDDIR/$ARCH/obj/$NAME
+#remove all trash in folder if exists
+    rm $OSXBUILDDIR/$ARCH/obj/$NAME/*.o
+    rm $OSXBUILDDIR/$ARCH/obj/$NAME/*.SYMDEF*
+
+    (
+        cd $OSXBUILDDIR/$ARCH/obj/$NAME;  ar -x ../../$NAME.a;
+            for FILE in *.o; do
+                NEW_FILE="${NAME}_${FILE}"
+                mv $FILE $NEW_FILE
+            done
+    );
+}
+
+#===============================================================================
 
 scrunchAllLibsTogetherInOneLibPerPlatform()
 {
@@ -265,7 +309,7 @@ scrunchAllLibsTogetherInOneLibPerPlatform()
 
     echo Splitting all existing fat binaries...
     for NAME in $BOOST_LIBS; do
-        ALL_LIBS="$ALL_LIBS libboost_$NAME.a"
+        ALL_LIBS="$ALL_LIBS libboost_$NAME"
 
         # $ARM_DEV_DIR/lipo "iphone-build/stage/lib/libboost_$NAME.a" -thin armv6 -o $IOSBUILDDIR/armv6/libboost_$NAME.a
         $ARM_DEV_DIR/lipo "iphone-build/stage/lib/libboost_$NAME.a" -thin armv7 -o $IOSBUILDDIR/armv7/libboost_$NAME.a
@@ -280,36 +324,50 @@ scrunchAllLibsTogetherInOneLibPerPlatform()
 
     echo "Decomposing each architecture's .a files"
     for NAME in $ALL_LIBS; do
-        echo Decomposing $NAME...
-        # (cd $IOSBUILDDIR/armv6/obj; ar -x ../$NAME );
-        (cd $IOSBUILDDIR/armv7/obj; ar -x ../$NAME );
-        (cd $IOSBUILDDIR/armv7s/obj; ar -x ../$NAME );
-        (cd $IOSBUILDDIR/arm64/obj; ar -x ../$NAME );
-        (cd $IOSBUILDDIR/i386/obj; ar -x ../$NAME );
-
-        (cd $OSXBUILDDIR/i386/obj; ar -x ../$NAME );
-        (cd $OSXBUILDDIR/x86_64/obj; ar -x ../$NAME );
+        echo "Decomposing ${NAME}.a..."
+        unpackArchive_ios "armv7" $NAME
+        unpackArchive_ios "armv7s" $NAME
+        unpackArchive_ios "arm64" $NAME
+        unpackArchive_ios "i386" $NAME
+        unpackArchive_osx "i386" $NAME
+        unpackArchive_osx "x86_64" $NAME
     done
 
+#   for NAME in $ALL_LIBS; do
+#       echo Decomposing $NAME...
+        # (cd $IOSBUILDDIR/armv6/obj; ar -x ../$NAME );
+#      (cd $IOSBUILDDIR/armv7/obj; ar -x ../$NAME );
+#      (cd $IOSBUILDDIR/armv7s/obj; ar -x ../$NAME );
+#      (cd $IOSBUILDDIR/arm64/obj; ar -x ../$NAME );
+#       (cd $IOSBUILDDIR/i386/obj; ar -x ../$NAME );
+
+#      (cd $OSXBUILDDIR/i386/obj; ar -x ../$NAME );
+#       (cd $OSXBUILDDIR/x86_64/obj; ar -x ../$NAME );
+#done
+
     echo "Linking each architecture into an uberlib ($ALL_LIBS => libboost.a )"
+    ls $IOSBUILDDIR/*
     rm $IOSBUILDDIR/*/libboost.a
-    # echo ...armv6
-    # (cd $IOSBUILDDIR/armv6; $ARM_DEV_DIR/ar crus libboost.a obj/*.o; )
-    echo ...armv7
-    (cd $IOSBUILDDIR/armv7; $ARM_DEV_DIR/ar crus libboost.a obj/*.o; )
-    echo ...armv7s
-    (cd $IOSBUILDDIR/armv7s; $ARM_DEV_DIR/ar crus libboost.a obj/*.o; )
-    echo ...arm64
-    (cd $IOSBUILDDIR/arm64; $ARM_DEV_DIR/ar crus libboost.a obj/*.o; )
-    echo ...i386
-    (cd $IOSBUILDDIR/i386; ar crus libboost.a obj/*.o; )
-
+    ls $OSXBUILDDIR/*
     rm $OSXBUILDDIR/*/libboost.a
-    echo ...osx-i386
-    (cd $OSXBUILDDIR/i386; ar crus libboost.a obj/*.o; )
+    for NAME in $ALL_LIBS; do
+        # echo ...armv6
+        # (cd $IOSBUILDDIR/armv6; $ARM_DEV_DIR/ar crus libboost.a obj/$NAME/*.o; )
+        echo ...armv7
+        (cd $IOSBUILDDIR/armv7; $ARM_DEV_DIR/ar crus libboost.a obj/$NAME/*.o; )
+        echo ...armv7s
+        (cd $IOSBUILDDIR/armv7s; $ARM_DEV_DIR/ar crus libboost.a obj/$NAME/*.o; )
+        echo ...arm64
+        (cd $IOSBUILDDIR/arm64; $ARM_DEV_DIR/ar crus libboost.a obj/$NAME/*.o; )
+        echo ...i386
+        (cd $IOSBUILDDIR/i386; ar crus libboost.a obj/$NAME/*.o; )
 
-    echo ...x86_64
-    (cd $OSXBUILDDIR/x86_64; ar crus libboost.a obj/*.o; )
+        echo ...osx-i386
+        (cd $OSXBUILDDIR/i386; ar crus libboost.a obj/$NAME/*.o; )
+
+        echo ...x86_64
+        (cd $OSXBUILDDIR/x86_64; ar crus libboost.a obj/$NAME/*.o; )
+done
 }
 
 #===============================================================================
@@ -421,12 +479,13 @@ echo "XCODE_ROOT:        $XCODE_ROOT"
 echo "COMPILER:          $COMPILER"
 echo "CPP11_FLAGS:       $CPP11_FLAGS"
 echo "CLEAN:             $CLEAN"
-# echo "BUILD_IOS:         $BUILD_IOS"
-# echo "BUILD_OSX:         $BUILD_OSX"
+echo "BUILD_IOS:         $BUILD_IOS"
+echo "BUILD_OSX:         $BUILD_OSX"
+echo "CPP11_FLAGS:       $CPP11_FLAGS"
 echo
 
 [[ $DOWNLOAD -eq 1 ]] && downloadBoost
-#inventMissingHeaders
+inventMissingHeaders
 [[ $CLEAN -eq 1 ]] && cleanEverythingReadyToStart
 unpackBoost
 bootstrapBoost
