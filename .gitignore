@@ -7,3 +7,6 @@ ios/
 osx/
 bak/
 dist/
+*.log
+
+

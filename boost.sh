@@ -48,7 +48,7 @@ while [ "$1" != "" ]; do
     case $1 in
         --with-c++11 ) CPP11_FLAGS="-std=c++11 -stdlib=libc++"
                     ;;
-        clean )    echo "setting clean to 1" && CLEAN=1
+        clean )    CLEAN=1
                     ;;
         download )    DOWNLOAD=1
                     ;;
@@ -70,6 +70,7 @@ done
 
 # : ${BOOST_LIBS:="graph random chrono thread signals filesystem regex system date_time"}
 : ${BOOST_LIBS:="serialization"}
+# : ${BOOST_LIBS:="atomic chrono date_time exception filesystem graph graph_parallel iostreams locale mpi program_options python random regex serialization signals system test thread timer wave"}
 : ${IPHONE_SDKVERSION:=$(xcodebuild -showsdks | grep iphoneos | egrep "[[:digit:]]+\.[[:digit:]]+" -o | tail -1)}
 : ${OSX_SDKVERSION:=10.8}
 : ${XCODE_ROOT:=$(xcode-select -print-path)}
@@ -233,6 +234,9 @@ buildBoost()
 	# Install this one so we can copy the includes for the frameworks...
     ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static stage
     ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static install
+
+    # ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin-${IPHONE_SDKVERSION}~iphonesim architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static stage
+    # ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin-${IPHONE_SDKVERSION}~iphonesim architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static install
     doneSection
 
     ./bjam -j16 --build-dir=iphonesim-build --stagedir=iphonesim-build/stage --toolset=darwin-${IPHONE_SDKVERSION}~iphonesim architecture=x86 target-os=iphone macosx-version=iphonesim-${IPHONE_SDKVERSION} link=static stage
@@ -415,6 +419,7 @@ echo "OSXFRAMEWORKDIR:   $OSXFRAMEWORKDIR"
 echo "IPHONE_SDKVERSION: $IPHONE_SDKVERSION"
 echo "XCODE_ROOT:        $XCODE_ROOT"
 echo "COMPILER:          $COMPILER"
+echo "CPP11_FLAGS:       $CPP11_FLAGS"
 echo "CLEAN:             $CLEAN"
 # echo "BUILD_IOS:         $BUILD_IOS"
 # echo "BUILD_OSX:         $BUILD_OSX"
