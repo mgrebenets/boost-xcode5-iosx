@@ -2,7 +2,7 @@
 
 #===============================================================================
 # Filename:  boost.sh
-# Author:    Pete Goodliffe
+# Author:   Pete Goodliffe
 # Copyright: (c) Copyright 2009 Pete Goodliffe
 # Licence:   Please feel free to use this, with attribution
 # Modified version
@@ -14,8 +14,8 @@
 # less painful.
 #
 # To configure the script, define:
-#    BOOST_LIBS:        which libraries to build
-#    IPHONE_SDKVERSION: iPhone SDK version (e.g. 5.1)
+#   BOOST_LIBS:  which libraries to build
+#   IPHONE_SDKVERSION: iPhone SDK version (e.g. 5.1)
 #
 # Then go get the source tar.bz of the boost you want to build, shove it in the
 # same directory as this script, and run "./boost.sh". Grab a cuppa. And voila.
@@ -39,6 +39,7 @@ usage () {
     echo "Options:" 1>&2
     echo -e "\t-h, --help\t\t\t\tPrint complete usage." 1>&2
     echo -e "\tclean\t\t\tPerform clean build." 1>&2
+    echo -e "\tdownload\t\t\tDownload tarball (if doesn't exist)." 1>&2
     echo -e "\t--with-c++11\t\t\t\tCompile using Clang, std=c++11 and stdlib=libc++." 1>&2
     echo -e "\t-v, --version VERSION\t\t\tVersion to build. Make sure you have boost_<VERSION>.tar.bz2 downloaded and ready." 1>&2
     exit 2
@@ -48,9 +49,9 @@ while [ "$1" != "" ]; do
     case $1 in
         --with-c++11 ) CPP11_FLAGS="-std=c++11 -stdlib=libc++"
                     ;;
-        clean )    CLEAN=1
+        clean ) CLEAN=1
                     ;;
-        download )    DOWNLOAD=1
+        download )  DOWNLOAD=1
                     ;;
         -v | --version ) shift
                         VERSION=$1
@@ -58,7 +59,7 @@ while [ "$1" != "" ]; do
         -h | --help ) usage
                         exit
                         ;;
-        * )         usage
+        * )   usage
                     exit 1
     esac
     # next arg
@@ -75,7 +76,6 @@ done
 : ${OSX_SDKVERSION:=10.8}
 : ${XCODE_ROOT:=$(xcode-select -print-path)}
 : ${EXTRA_CPPFLAGS:="-DBOOST_AC_USE_PTHREADS -DBOOST_SP_USE_PTHREADS $CPP11_FLAGS"}
-# : ${EXTRA_CPPFLAGS:="-DBOOST_AC_USE_PTHREADS -DBOOST_SP_USE_PTHREADS"}
 
 # The EXTRA_CPPFLAGS definition works around a thread race issue in
 # shared_ptr. I encountered this historically and have not verified that
@@ -126,8 +126,8 @@ abort()
 doneSection()
 {
     echo
-    echo "    ================================================================="
-    echo "    Done"
+    echo "  ================================================================="
+    echo "  Done"
     echo
 }
 
@@ -136,7 +136,7 @@ doneSection()
 cleanEverythingReadyToStart()
 {
     echo Cleaning everything before we start to build...
-	rm -rf iphone-build iphonesim-build osx-build
+    rm -rf iphone-build iphonesim-build osx-build
     rm -rf $BOOST_SRC
     rm -rf $IOSBUILDDIR
     rm -rf $OSXBUILDDIR
@@ -149,9 +149,10 @@ cleanEverythingReadyToStart()
 #===============================================================================
 downloadBoost()
 {
-    echo Downloading boost $BOOST_TARBALL...
-    # TODO: implement
-    # don't download if the tarball is already there
+    if [ ! -s $BOOST_TARBALL ]; then
+        echo Downloading boost $BOOST_TARBALL...
+        curl -L -o $BOOST_TARBALL http://sourceforge.net/projects/boost/files/boost/$VERSION/$BOOST_TARBALL/download
+    fi
     doneSection
 }
 
@@ -159,16 +160,16 @@ downloadBoost()
 unpackBoost()
 {
     echo Unpacking boost into $SRCDIR...
-    [ -d $SRCDIR ]    || mkdir -p $SRCDIR
+    [ -d $SRCDIR ] || mkdir -p $SRCDIR
     [ -d $BOOST_SRC ] || ( cd $SRCDIR; tar xfj $BOOST_TARBALL )
-    [ -d $BOOST_SRC ] && echo "    ...unpacked as $BOOST_SRC"
+    [ -d $BOOST_SRC ] && echo " ...unpacked as $BOOST_SRC"
     doneSection
 }
 
 #===============================================================================
 restoreBoost()
 {
-	cp $BOOST_SRC/tools/build/v2/user-config.jam-bk $SRCDIR/tools/build/v2/user-config.jam
+    cp $BOOST_SRC/tools/build/v2/user-config.jam-bk $SRCDIR/tools/build/v2/user-config.jam
 }
 
 writeBjamUserConfig()
@@ -177,16 +178,16 @@ writeBjamUserConfig()
 
 # armv6 version
 # using darwin : ${IPHONE_SDKVERSION}~iphone
-#    : $XCODE_ROOT/Toolchains/XcodeDefault.xctoolchain/usr/bin/$COMPILER -arch armv6 -arch armv7 -arch armv7s -fvisibility=hidden -fvisibility-inlines-hidden $EXTRA_CPPFLAGS
-#    : <striper> <root>$XCODE_ROOT/Platforms/iPhoneOS.platform/Developer
-#    : <architecture>arm <target-os>iphone
-#    ;
+#   : $XCODE_ROOT/Toolchains/XcodeDefault.xctoolchain/usr/bin/$COMPILER -arch armv6 -arch armv7 -arch armv7s -fvisibility=hidden -fvisibility-inlines-hidden $EXTRA_CPPFLAGS
+#   : <striper> <root>$XCODE_ROOT/Platforms/iPhoneOS.platform/Developer
+#   : <architecture>arm <target-os>iphone
+#   ;
 
-    # use sed cut stuff if it's already there to avoid duplicated entries
+    # use sed to cut stuff if it's already there to avoid duplicated entries
     sed -i.bak '/# BOOST/,$d' $BOOST_SRC/tools/build/v2/user-config.jam
 
-	cp $BOOST_SRC/tools/build/v2/user-config.jam $BOOST_SRC/tools/build/v2/user-config.jam-bk
-	cat >> $BOOST_SRC/tools/build/v2/user-config.jam <<EOF
+    cp $BOOST_SRC/tools/build/v2/user-config.jam $BOOST_SRC/tools/build/v2/user-config.jam-bk
+    cat >> $BOOST_SRC/tools/build/v2/user-config.jam <<EOF
 # BOOST
 using darwin : ${IPHONE_SDKVERSION}~iphone
    : $XCODE_ROOT/Toolchains/XcodeDefault.xctoolchain/usr/bin/$COMPILER -arch armv7 -arch armv7s -arch arm64 -fvisibility=hidden -fvisibility-inlines-hidden $EXTRA_CPPFLAGS
@@ -231,7 +232,7 @@ buildBoost()
 {
     cd $BOOST_SRC
 
-	# Install this one so we can copy the includes for the frameworks...
+    # Install this one so we can copy the includes for the frameworks...
     ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static stage
     ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static install
 
@@ -240,49 +241,28 @@ buildBoost()
     doneSection
 
     ./bjam -j16 --build-dir=iphonesim-build --stagedir=iphonesim-build/stage --toolset=darwin-${IPHONE_SDKVERSION}~iphonesim architecture=x86 target-os=iphone macosx-version=iphonesim-${IPHONE_SDKVERSION} link=static stage
-	doneSection
+    doneSection
 
-	./b2 -j16 --build-dir=osx-build --stagedir=osx-build/stage toolset=clang cxxflags="-std=c++11 -stdlib=libc++ -arch i386 -arch x86_64" linkflags="-stdlib=libc++" link=static threading=multi stage
+    ./b2 -j16 --build-dir=osx-build --stagedir=osx-build/stage toolset=clang cxxflags="-std=c++11 -stdlib=libc++ -arch i386 -arch x86_64" linkflags="-stdlib=libc++" link=static threading=multi stage
     doneSection
 }
 
 #===============================================================================
-unpackArchive_ios()
+unpackArchive()
 {
-    ARCH=$1
-    NAME=$2
+    BUILDDIR=$1
+    ARCH=$2
+    NAME=$3
 
-    echo "Unpacking $NAME"
+    echo "Unpacking $NAME from $BUILDDIR"
 
-    mkdir -p $IOSBUILDDIR/$ARCH/obj/$NAME
-#remove all trash in folder if exists
-    rm $IOSBUILDDIR/$ARCH/obj/$NAME/*.o
-    rm $IOSBUILDDIR/$ARCH/obj/$NAME/*.SYMDEF*
-
+    mkdir -p $BUILDDIR/$ARCH/obj/$NAME
+    #remove all trash in folder if exists
+    rm $BUILDDIR/$ARCH/obj/$NAME/*.o
+    rm $BUILDDIR/$ARCH/obj/$NAME/*.SYMDEF*
 
     (
-        cd $IOSBUILDDIR/$ARCH/obj/$NAME;  ar -x ../../$NAME.a;
-            for FILE in *.o; do
-                NEW_FILE="${NAME}_${FILE}"
-                mv $FILE $NEW_FILE
-            done
-    );
-}
-
-unpackArchive_osx()
-{
-    ARCH=$1
-    NAME=$2
-
-    echo "Unpacking $NAME"
-
-    mkdir -p $OSXBUILDDIR/$ARCH/obj/$NAME
-#remove all trash in folder if exists
-    rm $OSXBUILDDIR/$ARCH/obj/$NAME/*.o
-    rm $OSXBUILDDIR/$ARCH/obj/$NAME/*.SYMDEF*
-
-    (
-        cd $OSXBUILDDIR/$ARCH/obj/$NAME;  ar -x ../../$NAME.a;
+        cd $BUILDDIR/$ARCH/obj/$NAME; ar -x ../../$NAME.a;
             for FILE in *.o; do
                 NEW_FILE="${NAME}_${FILE}"
                 mv $FILE $NEW_FILE
@@ -294,7 +274,7 @@ unpackArchive_osx()
 
 scrunchAllLibsTogetherInOneLibPerPlatform()
 {
-	cd $BOOST_SRC
+    cd $BOOST_SRC
 
     # mkdir -p $IOSBUILDDIR/armv6/obj
     mkdir -p $IOSBUILDDIR/armv7/obj
@@ -309,41 +289,31 @@ scrunchAllLibsTogetherInOneLibPerPlatform()
 
     echo Splitting all existing fat binaries...
     for NAME in $BOOST_LIBS; do
-        ALL_LIBS="$ALL_LIBS libboost_$NAME"
+        LIB=libboost_$NAME
+        ALL_LIBS="$ALL_LIBS $LIB"
+        LIB_A=$LIB.a
 
-        # $ARM_DEV_DIR/lipo "iphone-build/stage/lib/libboost_$NAME.a" -thin armv6 -o $IOSBUILDDIR/armv6/libboost_$NAME.a
-        $ARM_DEV_DIR/lipo "iphone-build/stage/lib/libboost_$NAME.a" -thin armv7 -o $IOSBUILDDIR/armv7/libboost_$NAME.a
-        $ARM_DEV_DIR/lipo "iphone-build/stage/lib/libboost_$NAME.a" -thin armv7s -o $IOSBUILDDIR/armv7s/libboost_$NAME.a
-        $ARM_DEV_DIR/lipo "iphone-build/stage/lib/libboost_$NAME.a" -thin arm64 -o $IOSBUILDDIR/arm64/libboost_$NAME.a
+        # $ARM_DEV_DIR/lipo "iphone-build/stage/lib/$LIB_A" -thin armv6 -o $IOSBUILDDIR/armv6/$LIB_A
+        $ARM_DEV_DIR/lipo "iphone-build/stage/lib/$LIB_A" -thin armv7 -o $IOSBUILDDIR/armv7/$LIB_A
+        $ARM_DEV_DIR/lipo "iphone-build/stage/lib/$LIB_A" -thin armv7s -o $IOSBUILDDIR/armv7s/$LIB_A
+        $ARM_DEV_DIR/lipo "iphone-build/stage/lib/$LIB_A" -thin arm64 -o $IOSBUILDDIR/arm64/$LIB_A
 
-        cp "iphonesim-build/stage/lib/libboost_$NAME.a" $IOSBUILDDIR/i386/
+        cp "iphonesim-build/stage/lib/$LIB_A" $IOSBUILDDIR/i386/
 
-        $ARM_DEV_DIR/lipo "osx-build/stage/lib/libboost_$NAME.a" -thin i386 -o $OSXBUILDDIR/i386/libboost_$NAME.a
-        $ARM_DEV_DIR/lipo "osx-build/stage/lib/libboost_$NAME.a" -thin x86_64 -o $OSXBUILDDIR/x86_64/libboost_$NAME.a
+        $ARM_DEV_DIR/lipo "osx-build/stage/lib/$LIB_A" -thin i386 -o $OSXBUILDDIR/i386/$LIB_A
+        $ARM_DEV_DIR/lipo "osx-build/stage/lib/$LIB_A" -thin x86_64 -o $OSXBUILDDIR/x86_64/$LIB_A
     done
 
     echo "Decomposing each architecture's .a files"
     for NAME in $ALL_LIBS; do
         echo "Decomposing ${NAME}.a..."
-        unpackArchive_ios "armv7" $NAME
-        unpackArchive_ios "armv7s" $NAME
-        unpackArchive_ios "arm64" $NAME
-        unpackArchive_ios "i386" $NAME
-        unpackArchive_osx "i386" $NAME
-        unpackArchive_osx "x86_64" $NAME
+        unpackArchive $IOSBUILDDIR armv7 $NAME
+        unpackArchive $IOSBUILDDIR armv7s $NAME
+        unpackArchive $IOSBUILDDIR arm64 $NAME
+        unpackArchive $IOSBUILDDIR i386 $NAME
+        unpackArchive $OSXBUILDDIR i386 $NAME
+        unpackArchive $OSXBUILDDIR x86_64 $NAME
     done
-
-#   for NAME in $ALL_LIBS; do
-#       echo Decomposing $NAME...
-        # (cd $IOSBUILDDIR/armv6/obj; ar -x ../$NAME );
-#      (cd $IOSBUILDDIR/armv7/obj; ar -x ../$NAME );
-#      (cd $IOSBUILDDIR/armv7s/obj; ar -x ../$NAME );
-#      (cd $IOSBUILDDIR/arm64/obj; ar -x ../$NAME );
-#       (cd $IOSBUILDDIR/i386/obj; ar -x ../$NAME );
-
-#      (cd $OSXBUILDDIR/i386/obj; ar -x ../$NAME );
-#       (cd $OSXBUILDDIR/x86_64/obj; ar -x ../$NAME );
-#done
 
     echo "Linking each architecture into an uberlib ($ALL_LIBS => libboost.a )"
     ls $IOSBUILDDIR/*
@@ -364,7 +334,6 @@ scrunchAllLibsTogetherInOneLibPerPlatform()
 
         echo ...osx-i386
         (cd $OSXBUILDDIR/i386; ar crus libboost.a obj/$NAME/*.o; )
-
         echo ...x86_64
         (cd $OSXBUILDDIR/x86_64; ar crus libboost.a obj/$NAME/*.o; )
 done
@@ -387,23 +356,22 @@ lipoficate()
 lipoAllBoostLibraries()
 {
     for i in $BOOST_LIBS; do lipoficate $i; done;
-
     doneSection
 }
 
 #===============================================================================
 buildFramework()
 {
-	: ${1:?}
-	FRAMEWORKDIR=$1
-	BUILDDIR=$2
+    : ${1:?}
+    FRAMEWORKDIR=$1
+    BUILDDIR=$2
 
-	VERSION_TYPE=Alpha
-	FRAMEWORK_NAME=boost
-	FRAMEWORK_VERSION=A
+    VERSION_TYPE=Alpha
+    FRAMEWORK_NAME=boost
+    FRAMEWORK_VERSION=A
 
-	FRAMEWORK_CURRENT_VERSION=$BOOST_VERSION
-	FRAMEWORK_COMPATIBILITY_VERSION=$BOOST_VERSION
+    FRAMEWORK_CURRENT_VERSION=$BOOST_VERSION
+    FRAMEWORK_COMPATIBILITY_VERSION=$BOOST_VERSION
 
     FRAMEWORK_BUNDLE=$FRAMEWORKDIR/$FRAMEWORK_NAME.framework
     echo "Framework: Building $FRAMEWORK_BUNDLE from $BUILDDIR..."
@@ -420,7 +388,7 @@ buildFramework()
 
     echo "Framework: Creating symlinks..."
     ln -s $FRAMEWORK_VERSION               $FRAMEWORK_BUNDLE/Versions/Current
-    ln -s Versions/Current/Headers         $FRAMEWORK_BUNDLE/Headers
+    ln -s Versions/Current/Headers     $FRAMEWORK_BUNDLE/Headers
     ln -s Versions/Current/Resources       $FRAMEWORK_BUNDLE/Resources
     ln -s Versions/Current/Documentation   $FRAMEWORK_BUNDLE/Documentation
     ln -s Versions/Current/$FRAMEWORK_NAME $FRAMEWORK_BUNDLE/$FRAMEWORK_NAME
@@ -439,20 +407,20 @@ buildFramework()
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>English</string>
-	<key>CFBundleExecutable</key>
-	<string>${FRAMEWORK_NAME}</string>
-	<key>CFBundleIdentifier</key>
-	<string>org.boost</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundlePackageType</key>
-	<string>FMWK</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
-	<key>CFBundleVersion</key>
-	<string>${FRAMEWORK_CURRENT_VERSION}</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>English</string>
+    <key>CFBundleExecutable</key>
+    <string>${FRAMEWORK_NAME}</string>
+    <key>CFBundleIdentifier</key>
+    <string>org.boost</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundlePackageType</key>
+    <string>FMWK</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleVersion</key>
+    <string>${FRAMEWORK_CURRENT_VERSION}</string>
 </dict>
 </plist>
 EOF
