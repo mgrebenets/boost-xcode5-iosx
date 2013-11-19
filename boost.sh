@@ -29,7 +29,8 @@
 
 DOWNLOAD=0
 CLEAN=0
-CPP11_FLAGS=""
+CXX_FLAGS=""
+CXX_LINK_FLAGS=""
 VERSION=""
 BUILD_IOS=1
 BUILD_OSX=1
@@ -47,7 +48,8 @@ usage () {
 
 while [ "$1" != "" ]; do
     case $1 in
-        --with-c++11 ) CPP11_FLAGS="-std=c++11 -stdlib=libc++"
+        --with-c++11 ) CXX_FLAGS="-std=c++11 -stdlib=libc++"
+                        CXX_LINK_FLAGS="-stdlib=libc++"
                     ;;
         clean ) CLEAN=1
                     ;;
@@ -70,12 +72,13 @@ done
 [ -z $VERSION ] && usage
 
 # : ${BOOST_LIBS:="graph random chrono thread signals filesystem regex system date_time"}
-: ${BOOST_LIBS:="atomic chrono date_time exception filesystem graph graph_parallel iostreams locale mpi program_options python random regex serialization signals system test thread timer wave"}
+: ${BOOST_LIBS:="serialization"}
+# : ${BOOST_LIBS:="atomic chrono date_time exception filesystem graph graph_parallel iostreams locale mpi program_options python random regex serialization signals system test thread timer wave"}
 #atomic chrono context coroutine date_time exception filesystem graph graph_parallel iostreams locale log math mpi program_options python random regex serialization signals system test thread timer wave
 : ${IPHONE_SDKVERSION:=$(xcodebuild -showsdks | grep iphoneos | egrep "[[:digit:]]+\.[[:digit:]]+" -o | tail -1)}
 : ${OSX_SDKVERSION:=10.8}
 : ${XCODE_ROOT:=$(xcode-select -print-path)}
-: ${EXTRA_CPPFLAGS:="-DBOOST_AC_USE_PTHREADS -DBOOST_SP_USE_PTHREADS $CPP11_FLAGS"}
+: ${EXTRA_CPPFLAGS:="-DBOOST_AC_USE_PTHREADS -DBOOST_SP_USE_PTHREADS $CXX_FLAGS"}
 
 # The EXTRA_CPPFLAGS definition works around a thread race issue in
 # shared_ptr. I encountered this historically and have not verified that
@@ -233,6 +236,7 @@ buildBoost()
     cd $BOOST_SRC
 
     # Install this one so we can copy the includes for the frameworks...
+    # Build for iOS Device
     ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static stage
     ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static install
 
@@ -240,10 +244,14 @@ buildBoost()
     # ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin-${IPHONE_SDKVERSION}~iphonesim architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static install
     doneSection
 
+    # Build for iOS Simulator
     ./bjam -j16 --build-dir=iphonesim-build --stagedir=iphonesim-build/stage --toolset=darwin-${IPHONE_SDKVERSION}~iphonesim architecture=x86 target-os=iphone macosx-version=iphonesim-${IPHONE_SDKVERSION} link=static stage
     doneSection
 
-    ./b2 -j16 --build-dir=osx-build --stagedir=osx-build/stage toolset=clang cxxflags="-std=c++11 -stdlib=libc++ -arch i386 -arch x86_64" linkflags="-stdlib=libc++" link=static threading=multi stage
+    # Build for OSX
+    LINK_FLAGS_ARG=""
+    [[ -n "$CXX_LINK_FLAGS" ]] && LINK_FLAGS_ARG="linkflags=$CXX_LINK_FLAGS"
+    ./b2 -j16 --build-dir=osx-build --stagedir=osx-build/stage toolset=clang cxxflags="-arch i386 -arch x86_64 $CXX_FLAGS" $LINK_FLAGS_ARG link=static threading=multi stage
     doneSection
 }
 
@@ -445,11 +453,11 @@ echo "OSXFRAMEWORKDIR:   $OSXFRAMEWORKDIR"
 echo "IPHONE_SDKVERSION: $IPHONE_SDKVERSION"
 echo "XCODE_ROOT:        $XCODE_ROOT"
 echo "COMPILER:          $COMPILER"
-echo "CPP11_FLAGS:       $CPP11_FLAGS"
+echo "CXX_FLAGS:         $CXX_FLAGS"
+echo "CXX_LINK_FLAGS:    $CXX_LINK_FLAGS"
 echo "CLEAN:             $CLEAN"
 echo "BUILD_IOS:         $BUILD_IOS"
 echo "BUILD_OSX:         $BUILD_OSX"
-echo "CPP11_FLAGS:       $CPP11_FLAGS"
 echo
 
 [[ $DOWNLOAD -eq 1 ]] && downloadBoost
