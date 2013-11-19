@@ -1,4 +1,4 @@
-Build Boost Framework for iOS and OSX
+Build Boost Framework for iOS & OSX
 =====
 ###### Using Xcode5 (armv7, armv7s, arm64, i386, x86_64)
 
@@ -47,8 +47,8 @@ I tried to use [cocoapods spec for boost](https://github.com/CocoaPods/Specs/tre
 However, there's a number of things that made me to switch to using framework instead.
 * It doesn't include all the subspecs you might need for development
 * It takes really long time to update every time you run `pod update` or `pod install` (given that you have modified `Podfile`)
-  * The tar-ball is downloaded (50+ mb)
-  * The tag-ball is unpacked
+  * The tarball is downloaded (50+ mb)
+  * The tarball is unpacked
 * There's podspec for 1.51.0 only
 * You can't use the Pod if you need libraries like `serialization`
   * `serialization` has to be linked as a library, it doesn't work like the rest of the boost libraries by just including hpp headers inline. It needs to be compiled for your target platform.
