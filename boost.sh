@@ -198,7 +198,7 @@ using darwin : ${IPHONE_SDKVERSION}~iphone
    : <architecture>arm <target-os>iphone
    ;
 using darwin : ${IPHONE_SDKVERSION}~iphonesim
-   : $XCODE_ROOT/Toolchains/XcodeDefault.xctoolchain/usr/bin/$COMPILER -arch i386 -fvisibility=hidden -fvisibility-inlines-hidden $EXTRA_CPPFLAGS
+   : $XCODE_ROOT/Toolchains/XcodeDefault.xctoolchain/usr/bin/$COMPILER -arch i386 -arch x86_64 -fvisibility=hidden -fvisibility-inlines-hidden $EXTRA_CPPFLAGS
    : <striper> <root>$XCODE_ROOT/Platforms/iPhoneSimulator.platform/Developer
    : <architecture>x86 <target-os>iphone
    ;
@@ -289,6 +289,7 @@ scrunchAllLibsTogetherInOneLibPerPlatform()
     mkdir -p $IOSBUILDDIR/armv7s/obj
     mkdir -p $IOSBUILDDIR/arm64/obj
     mkdir -p $IOSBUILDDIR/i386/obj
+    mkdir -p $IOSBUILDDIR/x86_64/obj
 
     mkdir -p $OSXBUILDDIR/i386/obj
     mkdir -p $OSXBUILDDIR/x86_64/obj
@@ -306,7 +307,12 @@ scrunchAllLibsTogetherInOneLibPerPlatform()
         $ARM_DEV_DIR/lipo "iphone-build/stage/lib/$LIB_A" -thin armv7s -o $IOSBUILDDIR/armv7s/$LIB_A
         $ARM_DEV_DIR/lipo "iphone-build/stage/lib/$LIB_A" -thin arm64 -o $IOSBUILDDIR/arm64/$LIB_A
 
-        cp "iphonesim-build/stage/lib/$LIB_A" $IOSBUILDDIR/i386/
+
+        $ARM_DEV_DIR/lipo "osx-build/stage/lib/$LIB_A" -thin i386 -o $IOSBUILDDIR/i386/$LIB_A
+        $ARM_DEV_DIR/lipo "osx-build/stage/lib/$LIB_A" -thin x86_64 -o $IOSBUILDDIR/x86_64/$LIB_A
+
+        # cp "iphonesim-build/stage/lib/$LIB_A" $IOSBUILDDIR/i386/
+        # cp "iphonesim-build/stage/lib/$LIB_A" $IOSBUILDDIR/x86_64/
 
         $ARM_DEV_DIR/lipo "osx-build/stage/lib/$LIB_A" -thin i386 -o $OSXBUILDDIR/i386/$LIB_A
         $ARM_DEV_DIR/lipo "osx-build/stage/lib/$LIB_A" -thin x86_64 -o $OSXBUILDDIR/x86_64/$LIB_A
@@ -319,6 +325,8 @@ scrunchAllLibsTogetherInOneLibPerPlatform()
         unpackArchive $IOSBUILDDIR armv7s $NAME
         unpackArchive $IOSBUILDDIR arm64 $NAME
         unpackArchive $IOSBUILDDIR i386 $NAME
+        unpackArchive $IOSBUILDDIR x86_64 $NAME
+
         unpackArchive $OSXBUILDDIR i386 $NAME
         unpackArchive $OSXBUILDDIR x86_64 $NAME
     done
@@ -339,10 +347,12 @@ scrunchAllLibsTogetherInOneLibPerPlatform()
         (cd $IOSBUILDDIR/arm64; $ARM_DEV_DIR/ar crus libboost.a obj/$NAME/*.o; )
         echo ...i386
         (cd $IOSBUILDDIR/i386; ar crus libboost.a obj/$NAME/*.o; )
+        echo ...x86_64
+        (cd $IOSBUILDDIR/x86_64; ar crus libboost.a obj/$NAME/*.o; )
 
         echo ...osx-i386
         (cd $OSXBUILDDIR/i386; ar crus libboost.a obj/$NAME/*.o; )
-        echo ...x86_64
+        echo ...osx-x86_64
         (cd $OSXBUILDDIR/x86_64; ar crus libboost.a obj/$NAME/*.o; )
 done
 }
@@ -461,9 +471,9 @@ echo "BUILD_OSX:         $BUILD_OSX"
 echo
 
 [[ $DOWNLOAD -eq 1 ]] && downloadBoost
-inventMissingHeaders
 [[ $CLEAN -eq 1 ]] && cleanEverythingReadyToStart
 unpackBoost
+inventMissingHeaders
 bootstrapBoost
 writeBjamUserConfig
 buildBoost
