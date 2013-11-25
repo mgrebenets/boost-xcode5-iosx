@@ -57,7 +57,7 @@ To fix this problem, include the following line in your porject `***-Prefix.pch`
 In Xcode 5 there's no `ar` excutable in `SIM_DEV_DIR` so using `/usr/bin/ar` instead.
 
 ## Demo
-Check out [this demo project](https://github.com/mgrebenets/boost-xcode5-demo)A for some examples.
+Check out [this demo project](https://github.com/mgrebenets/boost-xcode5-demo) for some examples.
 
 ## Why not Using Cocoapods?
 I tried to use [cocoapods spec for boost](https://github.com/CocoaPods/Specs/tree/master/boost).
