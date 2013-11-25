@@ -43,7 +43,7 @@ Under *Apple LLVM 5.0 - Language - C++* make the following changes
 * *C++ Language Dialect* set to *C++11 [-std=c++11]*
 * *C++ Standard Library* set to *libc++ (LLVM C++ standard library with C++11 support)*
 
-### Parse errors when using <boost/type_traits.hpp>
+### Parse errors when including `boost/type_traits.hpp`
 If you happen to include `<boost/type_traits.hpp>` header file, you may see compile errors like this
 
     Unexpected member name of ';' after declaration specifiers
