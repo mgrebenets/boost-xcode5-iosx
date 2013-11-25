@@ -28,9 +28,13 @@ Examples:
     # build version 1.54.0 for ios and osx without c++11, no clean
     ./boost.sh --version 1.54.0
 
-## Notes and Changes
-### Link Errors in Xcode 5
+## Troubleshooting
+### Undefined symbols link error
 If you use libraries like `serialization` you might see link errors in Xcode 5 especially when the framework was built using `--with-c++11` flag.
+
+    Undefined symbols for architecture i386:
+    "std::__1::__vector_base_common<true>::__throw_length_error() const", referenced from:
+    void std::__1::vector<boost::archive::detail::basic_iarchive_impl::cobject_id, std::__1::allocator<boost::archive::detail::basic_iarchive_impl::cobject_id> >::__push_back_slow_path<boost::archive::detail::basic_iarchive_impl::cobject_id>(boost::archive::detail::basic_iarchive_impl::cobject_id&&) in boost(libboost_serialization_basic_iarchive.o)
 
 You have to change your project or target build settings.
 
@@ -39,6 +43,16 @@ Under *Apple LLVM 5.0 - Language - C++* make the following changes
 * *C++ Language Dialect* set to *C++11 [-std=c++11]*
 * *C++ Standard Library* set to *libc++ (LLVM C++ standard library with C++11 support)*
 
+### Parse errors when using <boost/type_traits.hpp>
+If you happen to include `<boost/type_traits.hpp>` header file, you may see compile errors like this
+
+    Unexpected member name of ';' after declaration specifiers
+
+To fix this problem, include the following line in your porject `***-Prefix.pch` file.
+
+    #define __ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES 0
+
+## Notes and Changes
 ### `ar` for Simulator Dev Tools
 In Xcode 5 there's no `ar` excutable in `SIM_DEV_DIR` so using `/usr/bin/ar` instead.
 
