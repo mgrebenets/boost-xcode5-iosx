@@ -36,13 +36,13 @@ BUILD_IOS=1
 BUILD_OSX=1
 
 usage () {
-    echo "Usage: ${0##*/} [clean] [-h|--help] [--with-c++11] -v|--version VERSION" 1>&2
+    echo "Usage: $(basename $0) [clean] [download] [-h|--help] [--with-c++11] -v|--version VERSION" 1>&2
     echo "Options:" 1>&2
-    echo -e "\t-h, --help\t\t\t\tPrint complete usage." 1>&2
-    echo -e "\tclean\t\t\tPerform clean build." 1>&2
+    echo -e "\t-h, --help\t\t\tPrint complete usage." 1>&2
+    echo -e "\tclean\t\t\t\tPerform clean build." 1>&2
     echo -e "\tdownload\t\t\tDownload tarball (if doesn't exist)." 1>&2
-    echo -e "\t--with-c++11\t\t\t\tCompile using Clang, std=c++11 and stdlib=libc++." 1>&2
-    echo -e "\t-v, --version VERSION\t\t\tVersion to build. Make sure you have boost_<VERSION>.tar.bz2 downloaded and ready." 1>&2
+    echo -e "\t--with-c++11\t\t\tCompile using Clang, std=c++11 and stdlib=libc++." 1>&2
+    echo -e "\t-v, --version VERSION\t\tVersion to build. Make sure you have boost_<VERSION>.tar.bz2 downloaded and ready." 1>&2
     exit 2
 }
 
