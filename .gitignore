@@ -8,5 +8,5 @@ osx/
 bak/
 dist/
 *.log
-
+release/
 

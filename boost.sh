@@ -71,8 +71,12 @@ done
 # Version is mandatory
 [ -z $VERSION ] && usage
 
-# : ${BOOST_LIBS:="graph random chrono thread signals filesystem regex system date_time"}
-: ${BOOST_LIBS:="serialization"}
+# these libraries must be built for target platform
+: ${BOOST_LIBS:="chrono context filesystem graph_parallel iostreams locale mpi program_options python regex serialization signals system thread timer wave"}
+# add optional libraries
+BOOST_LIBS="$BOOST_LIBS date_time graph math random test exception"
+
+# : ${BOOST_LIBS:="serialization"}
 # : ${BOOST_LIBS:="atomic chrono date_time exception filesystem graph graph_parallel iostreams locale mpi program_options python random regex serialization signals system test thread timer wave"}
 #atomic chrono context coroutine date_time exception filesystem graph graph_parallel iostreams locale log math mpi program_options python random regex serialization signals system test thread timer wave
 : ${IPHONE_SDKVERSION:=$(xcodebuild -showsdks | grep iphoneos | egrep "[[:digit:]]+\.[[:digit:]]+" -o | tail -1)}
@@ -106,8 +110,10 @@ BOOST_SRC=$SRCDIR/boost_${BOOST_VERSION_SFX}
 
 #===============================================================================
 
-ARM_DEV_DIR=$XCODE_ROOT/Platforms/iPhoneOS.platform/Developer/usr/bin
-SIM_DEV_DIR=$XCODE_ROOT/Platforms/iPhoneSimulator.platform/Developer/usr/bin
+IPHONE_OS_PLATFORM_PATH=$(xcrun --sdk iphoneos --show-sdk-platform-path)
+ARM_DEV_DIR=$IPHONE_OS_PLATFORM_PATH/Developer/usr/bin
+IPHONE_SIMULATOR_PLATFORM_PATH=$(xcrun --sdk iphonesimulator --show-sdk-platform-path)
+SIM_DEV_DIR=$IPHONE_SIMULATOR_PLATFORM_PATH/Developer/usr/bin
 
 ARM_COMBINED_LIB=$IOSBUILDDIR/lib_boost_arm.a
 SIM_COMBINED_LIB=$IOSBUILDDIR/lib_boost_x86.a
@@ -194,12 +200,12 @@ writeBjamUserConfig()
 # BOOST
 using darwin : ${IPHONE_SDKVERSION}~iphone
    : $XCODE_ROOT/Toolchains/XcodeDefault.xctoolchain/usr/bin/$COMPILER -arch armv7 -arch armv7s -arch arm64 -fvisibility=hidden -fvisibility-inlines-hidden $EXTRA_CPPFLAGS
-   : <striper> <root>$XCODE_ROOT/Platforms/iPhoneOS.platform/Developer
+   : <striper> <root>$IPHONE_OS_PLATFORM_PATH/Developer
    : <architecture>arm <target-os>iphone
    ;
 using darwin : ${IPHONE_SDKVERSION}~iphonesim
    : $XCODE_ROOT/Toolchains/XcodeDefault.xctoolchain/usr/bin/$COMPILER -arch i386 -arch x86_64 -fvisibility=hidden -fvisibility-inlines-hidden $EXTRA_CPPFLAGS
-   : <striper> <root>$XCODE_ROOT/Platforms/iPhoneSimulator.platform/Developer
+   : <striper> <root>$IPHONE_SIMULATOR_PLATFORM_PATH/Developer
    : <architecture>x86 <target-os>iphone
    ;
 EOF
@@ -215,7 +221,7 @@ inventMissingHeaders()
     # They are supported on the device, so we copy them from x86 SDK to a staging area
     # to use them on ARM, too.
     echo "Invent missing headers"
-    cp $XCODE_ROOT/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator${IPHONE_SDKVERSION}.sdk/usr/include/{crt_externs,bzlib}.h $BOOST_SRC
+    cp $(xcrun --sdk iphonesimulator --show-sdk-path)/usr/include/{crt_externs,bzlib}.h $BOOST_SRC
 }
 
 #===============================================================================
