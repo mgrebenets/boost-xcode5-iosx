@@ -52,6 +52,11 @@ To fix this problem, include the following line in your porject `***-Prefix.pch`
 
     #define __ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES 0
 
+## Header-Only Libraries
+Most of the boost libraries are header-only, meaning you only need to include header files to make them work.
+However, there is a [list of libraries](http://www.boost.org/doc/libs/1_55_0/more/getting_started/unix-variants.html#header-only-libraries) that need to be built for your target platform.
+Check the link above and modify `BOOST_LIBS` in `boost.sh` to include or exclude the libraries for your project.
+
 ## Notes and Changes
 ### `ar` for Simulator Dev Tools
 In Xcode 5 there's no `ar` excutable in `SIM_DEV_DIR` so using `/usr/bin/ar` instead.
