@@ -72,9 +72,10 @@ done
 [ -z $VERSION ] && usage
 
 # these libraries must be built for target platform
-: ${BOOST_LIBS:="chrono context filesystem graph_parallel iostreams locale mpi program_options python regex serialization signals system thread timer wave"}
+# : ${BOOST_LIBS:="chrono context filesystem graph_parallel iostreams locale mpi program_options python regex serialization signals system thread timer wave"}
+: ${BOOST_LIBS:="serialization thread system"}
 # add optional libraries
-BOOST_LIBS="$BOOST_LIBS date_time graph math random test exception"
+# BOOST_LIBS="$BOOST_LIBS date_time graph math random test exception"
 
 # : ${BOOST_LIBS:="serialization"}
 # : ${BOOST_LIBS:="atomic chrono date_time exception filesystem graph graph_parallel iostreams locale mpi program_options python random regex serialization signals system test thread timer wave"}
@@ -169,6 +170,7 @@ downloadBoost()
 unpackBoost()
 {
     echo Unpacking boost into $SRCDIR...
+    [ -d $BOOST_TARBALL ] || ( echo "No such file: $BOOST_TARBALL"; abort )
     [ -d $SRCDIR ] || mkdir -p $SRCDIR
     [ -d $BOOST_SRC ] || ( cd $SRCDIR; tar xfj $BOOST_TARBALL )
     [ -d $BOOST_SRC ] && echo " ...unpacked as $BOOST_SRC"
