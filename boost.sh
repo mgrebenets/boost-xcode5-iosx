@@ -71,11 +71,14 @@ done
 # Version is mandatory
 [ -z $VERSION ] && usage
 
+echo "BOOST_LIBS: $BOOST_LIBS"
+exit 0
+
 # these libraries must be built for target platform
 # : ${BOOST_LIBS:="chrono context filesystem graph_parallel iostreams locale mpi program_options python regex serialization signals system thread timer wave"}
-: ${BOOST_LIBS:="serialization thread system"}
-# add optional libraries
-# BOOST_LIBS="$BOOST_LIBS date_time graph math random test exception"
+# try to pick up BOOST_LIBS from environment variable first
+# if it's empty, then build with serialization thread system and locale for a demo
+[[ -z "$BOOST_LIBS" ]] && BOOST_LIBS="serialization thread system"
 
 # : ${BOOST_LIBS:="serialization"}
 # : ${BOOST_LIBS:="atomic chrono date_time exception filesystem graph graph_parallel iostreams locale mpi program_options python random regex serialization signals system test thread timer wave"}

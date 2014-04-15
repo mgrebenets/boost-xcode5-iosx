@@ -3,14 +3,14 @@ Build Boost Framework for iOS & OSX
 ###### Using Xcode5 (armv7, armv7s, arm64, i386, x86_64)
 
 ### Boost Source
-Script does not yet support downloading the source code, so you have to get it manually.
+Script will download source code tarball if it isn't available in the root directory.
 
 * [boost downloads](http://www.boost.org/users/download/)
 * [1.53.0](https://sourceforge.net/projects/boost/files/boost/1.53.0/)
 * [1.54.0](https://sourceforge.net/projects/boost/files/boost/1.54.0/)
+* [1.55.0](https://sourceforge.net/projects/boost/files/boost/1.55.0/) - untested!
 
-The script is expecting `bz2` tarball.
-Put the tarball in the same folder with `boost.sh`.
+You may get the sources manually as well. The script is expecting `bz2` tarball. Put the tarball in the same folder with `boost.sh`.
 
 Make sure you keep the tarball name unchanged, so it is like `boost_1_53_0.tar.bz2`.
 
@@ -18,15 +18,18 @@ Make sure you keep the tarball name unchanged, so it is like `boost_1_53_0.tar.b
 Use `boost.sh` to build boost framework.
 Run `boost.sh -h` to get help message.
 
-Modify `BOOST_LIBS` with list of libraries that you need.
+Set `BOOST_LIBS` environment variable with list of libraries that you need.
+By default the script will build `serialization`, `thread`, `system` and `locale` for demo project.
 
 Examples:
 
     # clean build version 1.53.0 for ios and osx with c++11
-    ./boost.sh clean --with-c++11 -v 1.53.0
+    # libraries: thread, system and locale
+    BOOST_LIBS="thread system locale" ./boost.sh clean --with-c++11 -v 1.53.0
 
     # build version 1.54.0 for ios and osx without c++11, no clean
-    ./boost.sh --version 1.54.0
+    # libraries: system only
+    BOOST_LIBS="system" ./boost.sh --version 1.54.0
 
 ## Troubleshooting
 ### Undefined symbols link error

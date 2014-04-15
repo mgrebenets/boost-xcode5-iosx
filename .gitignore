@@ -9,4 +9,5 @@ bak/
 dist/
 *.log
 release/
-
+*.sublime-project
+*.sublime-workspace
