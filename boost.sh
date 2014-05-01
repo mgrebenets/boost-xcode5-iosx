@@ -72,7 +72,6 @@ done
 [ -z $VERSION ] && usage
 
 echo "BOOST_LIBS: $BOOST_LIBS"
-exit 0
 
 # these libraries must be built for target platform
 # : ${BOOST_LIBS:="chrono context filesystem graph_parallel iostreams locale mpi program_options python regex serialization signals system thread timer wave"}
