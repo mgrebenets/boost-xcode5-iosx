@@ -71,21 +71,19 @@ done
 # Version is mandatory
 [ -z $VERSION ] && usage
 
-echo "BOOST_LIBS: $BOOST_LIBS"
-exit 0
-
 # these libraries must be built for target platform
 # : ${BOOST_LIBS:="chrono context filesystem graph_parallel iostreams locale mpi program_options python regex serialization signals system thread timer wave"}
 # try to pick up BOOST_LIBS from environment variable first
 # if it's empty, then build with serialization thread system and locale for a demo
-[[ -z "$BOOST_LIBS" ]] && BOOST_LIBS="serialization thread system"
+[[ -z "$BOOST_LIBS" ]] && BOOST_LIBS="serialization thread system locale"
 
 # : ${BOOST_LIBS:="serialization"}
 # : ${BOOST_LIBS:="atomic chrono date_time exception filesystem graph graph_parallel iostreams locale mpi program_options python random regex serialization signals system test thread timer wave"}
 #atomic chrono context coroutine date_time exception filesystem graph graph_parallel iostreams locale log math mpi program_options python random regex serialization signals system test thread timer wave
 : ${IPHONE_SDKVERSION:=$(xcodebuild -showsdks | grep iphoneos | egrep "[[:digit:]]+\.[[:digit:]]+" -o | tail -1)}
-: ${OSX_SDKVERSION:=10.8}
+: ${OSX_SDKVERSION:=$(xcodebuild -showsdks | grep macosx | egrep "[[:digit:]]+\.[[:digit:]]+" -o | tail -1)}
 : ${XCODE_ROOT:=$(xcode-select -print-path)}
+: ${XCODE_TOOLCHAIN_BIN:="$XCODE_ROOT/Toolchains/XcodeDefault.xctoolchain/usr/bin"}
 : ${EXTRA_CPPFLAGS:="-DBOOST_AC_USE_PTHREADS -DBOOST_SP_USE_PTHREADS $CXX_FLAGS"}
 
 # The EXTRA_CPPFLAGS definition works around a thread race issue in
@@ -116,11 +114,21 @@ BOOST_SRC=$SRCDIR/boost_${BOOST_VERSION_SFX}
 
 IPHONE_OS_PLATFORM_PATH=$(xcrun --sdk iphoneos --show-sdk-platform-path)
 ARM_DEV_DIR=$IPHONE_OS_PLATFORM_PATH/Developer/usr/bin
+IPHONE_OS_SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
+
 IPHONE_SIMULATOR_PLATFORM_PATH=$(xcrun --sdk iphonesimulator --show-sdk-platform-path)
 SIM_DEV_DIR=$IPHONE_SIMULATOR_PLATFORM_PATH/Developer/usr/bin
+IPHONE_SIMULATOR_SDK_PATH=$(xcrun --sdk iphonesimulator --show-sdk-path)
 
 ARM_COMBINED_LIB=$IOSBUILDDIR/lib_boost_arm.a
 SIM_COMBINED_LIB=$IOSBUILDDIR/lib_boost_x86.a
+
+# iconv library path required for building locale library
+# ICONV_PATH=$(find $(xcrun --sdk iphoneos --show-sdk-platform-path) -name "libiconv*" | tail -1)
+ICONV_IOS_PATH=$(dirname $(find $(xcrun --sdk iphoneos --show-sdk-platform-path) -name "libiconv*" | tail -1 ) | rev | cut -d/ -f2- | rev)
+ICONV_IOS_OPT="-sICONV_PATH=${ICONV_IOS_PATH}"
+# ICONV_IOS_OPT="-sICONV_PATH=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS7.1.sdk/usr"
+echo "ICONV_IOS_OPT: $ICONV_IOS_OPT"
 
 #===============================================================================
 
@@ -204,12 +212,12 @@ writeBjamUserConfig()
     cat >> $BOOST_SRC/tools/build/v2/user-config.jam <<EOF
 # BOOST
 using darwin : ${IPHONE_SDKVERSION}~iphone
-   : $XCODE_ROOT/Toolchains/XcodeDefault.xctoolchain/usr/bin/$COMPILER -arch armv7 -arch armv7s -arch arm64 -fvisibility=hidden -fvisibility-inlines-hidden $EXTRA_CPPFLAGS
+   : $XCODE_TOOLCHAIN_BIN/$COMPILER -arch armv7 -arch armv7s -arch arm64 -fvisibility=hidden -fvisibility-inlines-hidden $EXTRA_CPPFLAGS
    : <striper> <root>$IPHONE_OS_PLATFORM_PATH/Developer
    : <architecture>arm <target-os>iphone
    ;
 using darwin : ${IPHONE_SDKVERSION}~iphonesim
-   : $XCODE_ROOT/Toolchains/XcodeDefault.xctoolchain/usr/bin/$COMPILER -arch i386 -arch x86_64 -fvisibility=hidden -fvisibility-inlines-hidden $EXTRA_CPPFLAGS
+   : $XCODE_TOOLCHAIN_BIN/$COMPILER -arch i386 -arch x86_64 -fvisibility=hidden -fvisibility-inlines-hidden $EXTRA_CPPFLAGS
    : <striper> <root>$IPHONE_SIMULATOR_PLATFORM_PATH/Developer
    : <architecture>x86 <target-os>iphone
    ;
@@ -226,7 +234,7 @@ inventMissingHeaders()
     # They are supported on the device, so we copy them from x86 SDK to a staging area
     # to use them on ARM, too.
     echo "Invent missing headers"
-    cp $(xcrun --sdk iphonesimulator --show-sdk-path)/usr/include/{crt_externs,bzlib}.h $BOOST_SRC
+    cp $IPHONE_SIMULATOR_SDK_PATH/usr/include/{crt_externs,bzlib,iconv}.h $BOOST_SRC
 }
 
 #===============================================================================
@@ -248,8 +256,10 @@ buildBoost()
 
     # Install this one so we can copy the includes for the frameworks...
     # Build for iOS Device
-    ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static stage
-    ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static install
+    ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static stage \
+        $ICONV_IOS_OPT
+    ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static install \
+        $ICONV_IOS_OPT
 
     # ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin-${IPHONE_SDKVERSION}~iphonesim architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static stage
     # ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin-${IPHONE_SDKVERSION}~iphonesim architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static install
