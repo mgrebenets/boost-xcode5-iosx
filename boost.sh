@@ -74,8 +74,8 @@ done
 # these libraries must be built for target platform
 # : ${BOOST_LIBS:="chrono context filesystem graph_parallel iostreams locale mpi program_options python regex serialization signals system thread timer wave"}
 # try to pick up BOOST_LIBS from environment variable first
-# if it's empty, then build with serialization thread system and locale for a demo
-[[ -z "$BOOST_LIBS" ]] && BOOST_LIBS="serialization thread system locale"
+# if it's empty, then build with serialization thread system for a demo
+[[ -z "$BOOST_LIBS" ]] && BOOST_LIBS="serialization thread system"
 
 # : ${BOOST_LIBS:="serialization"}
 # : ${BOOST_LIBS:="atomic chrono date_time exception filesystem graph graph_parallel iostreams locale mpi program_options python random regex serialization signals system test thread timer wave"}
@@ -122,13 +122,6 @@ IPHONE_SIMULATOR_SDK_PATH=$(xcrun --sdk iphonesimulator --show-sdk-path)
 
 ARM_COMBINED_LIB=$IOSBUILDDIR/lib_boost_arm.a
 SIM_COMBINED_LIB=$IOSBUILDDIR/lib_boost_x86.a
-
-# iconv library path required for building locale library
-# ICONV_PATH=$(find $(xcrun --sdk iphoneos --show-sdk-platform-path) -name "libiconv*" | tail -1)
-ICONV_IOS_PATH=$(dirname $(find $(xcrun --sdk iphoneos --show-sdk-platform-path) -name "libiconv*" | tail -1 ) | rev | cut -d/ -f2- | rev)
-ICONV_IOS_OPT="-sICONV_PATH=${ICONV_IOS_PATH}"
-# ICONV_IOS_OPT="-sICONV_PATH=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS7.1.sdk/usr"
-echo "ICONV_IOS_OPT: $ICONV_IOS_OPT"
 
 #===============================================================================
 
@@ -256,10 +249,8 @@ buildBoost()
 
     # Install this one so we can copy the includes for the frameworks...
     # Build for iOS Device
-    ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static stage \
-        $ICONV_IOS_OPT
-    ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static install \
-        $ICONV_IOS_OPT
+    ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static stage
+    ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static install
 
     # ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin-${IPHONE_SDKVERSION}~iphonesim architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static stage
     # ./bjam -j16 --build-dir=iphone-build --stagedir=iphone-build/stage --prefix=$PREFIXDIR toolset=darwin-${IPHONE_SDKVERSION}~iphonesim architecture=arm target-os=iphone macosx-version=iphone-${IPHONE_SDKVERSION} define=_LITTLE_ENDIAN link=static install
