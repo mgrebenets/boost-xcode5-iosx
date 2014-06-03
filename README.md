@@ -8,7 +8,7 @@ Makefile on this branch does not download the tarball yet, so you will have to d
 * [boost downloads](http://www.boost.org/users/download/)
 * [1.53.0](https://sourceforge.net/projects/boost/files/boost/1.53.0/)
 * [1.54.0](https://sourceforge.net/projects/boost/files/boost/1.54.0/)
-* [1.55.0](https://sourceforge.net/projects/boost/files/boost/1.55.0/) - untested!
+* [1.55.0](https://sourceforge.net/projects/boost/files/boost/1.55.0/)
 
 The script is expecting `bz2` tarball. Put the tarball in `archives` folder.
 
