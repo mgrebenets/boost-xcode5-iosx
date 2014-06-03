@@ -2,6 +2,8 @@ Build Boost Framework for iOS & OSX
 =====
 ###### Using Xcode5 (armv7, armv7s, arm64, i386, x86_64)
 
+> For a better way to build the framework using `Makefile` checkout [makefile](https://github.com/mgrebenets/boost-xcode5-iosx/tree/makefile) branch of this repository.
+
 ### Boost Source
 Script will download source code tarball if it isn't available in the root directory.
 
