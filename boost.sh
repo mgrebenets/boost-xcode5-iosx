@@ -71,6 +71,8 @@ done
 # Version is mandatory
 [ -z $VERSION ] && usage
 
+echo "BOOST_LIBS: $BOOST_LIBS"
+
 # these libraries must be built for target platform
 # : ${BOOST_LIBS:="chrono context filesystem graph_parallel iostreams locale mpi program_options python regex serialization signals system thread timer wave"}
 # try to pick up BOOST_LIBS from environment variable first
