@@ -3,35 +3,46 @@ Build Boost Framework for iOS & OSX
 ###### Using Xcode5 (armv7, armv7s, arm64, i386, x86_64)
 
 ### Boost Source
-Script will download source code tarball if it isn't available in the root directory.
+Makefile on this branch does not download the tarball yet, so you will have to do it manually.
 
 * [boost downloads](http://www.boost.org/users/download/)
 * [1.53.0](https://sourceforge.net/projects/boost/files/boost/1.53.0/)
 * [1.54.0](https://sourceforge.net/projects/boost/files/boost/1.54.0/)
 * [1.55.0](https://sourceforge.net/projects/boost/files/boost/1.55.0/) - untested!
 
-You may get the sources manually as well. The script is expecting `bz2` tarball. Put the tarball in the same folder with `boost.sh`.
+The script is expecting `bz2` tarball. Put the tarball in `archives` folder.
 
 Make sure you keep the tarball name unchanged, so it is like `boost_1_53_0.tar.bz2`.
 
-### Build
-Use `boost.sh` to build boost framework.
-Run `boost.sh -h` to get help message.
+### Make
 
-Set `BOOST_LIBS` environment variable with list of libraries that you need.
-By default the script will build `serialization`, `thread`, `system` and `locale` for demo project.
+Build is done with `make` command.
+Override `BOOST_VERSION` and `BOOST_LIBS` command to get customized builds.
 
-Examples:
+    # build 1.54.0
+    make -r BOOST_VERSION=1.54.0
 
-    # clean build version 1.53.0 for ios and osx with c++11
-    # libraries: thread, system and locale
-    BOOST_LIBS="thread system locale" ./boost.sh clean --with-c++11 -v 1.53.0
+    #build 1.55.0 with system and thread libraries only
+    make -r BOOST_VERSION=1.55.0 BOOST_LIBS="system thread"
 
-    # build version 1.54.0 for ios and osx without c++11, no clean
-    # libraries: system only
-    BOOST_LIBS="system" ./boost.sh --version 1.54.0
+By default the script will build `date_time`, `exception`, `serialization` and `system`.
+
+### Framework
+
+The built framework will be located in a temp folder. It could be `tmp` in your home folder. Have a look at the log message to find out the exact location.
+
+_There's a room for improvement here._
 
 ## Troubleshooting
+
+### 3rd Party Dependencies
+The Makefile cannot handle external dependencies yet.
+For example, to build `locale` library, you will require to link against `icu` or `iconv` library.
+
+Unfortunately you won't be able to do that yet. Neither with `Makefile` nor with `boost.sh` script.
+
+If you have `cmake` skills and have the solution, please contribute.
+
 ### Undefined symbols link error
 If you use libraries like `serialization` you might see link errors in Xcode 5 especially when the framework was built using `--with-c++11` flag.
 
@@ -58,11 +69,7 @@ To fix this problem, include the following line in your porject `***-Prefix.pch`
 ## Header-Only Libraries
 Most of the boost libraries are header-only, meaning you only need to include header files to make them work.
 However, there is a [list of libraries](http://www.boost.org/doc/libs/1_55_0/more/getting_started/unix-variants.html#header-only-libraries) that need to be built for your target platform.
-Check the link above and modify `BOOST_LIBS` in `boost.sh` to include or exclude the libraries for your project.
-
-## Notes and Changes
-### `ar` for Simulator Dev Tools
-In Xcode 5 there's no `ar` excutable in `SIM_DEV_DIR` so using `/usr/bin/ar` instead.
+Set `BOOST_LIBS` properly to get your customized build.
 
 ## Demo
 Check out [this demo project](https://github.com/mgrebenets/boost-xcode5-demo) for some examples.
@@ -82,7 +89,9 @@ However, there's a number of things that made me to switch to using framework in
 This repo is practially a fork of https://github.com/wuhao5/boost.
 Only this one does not contain boost source code, thus is more lightweight.
 
-The script mentioned above in it's turn is based on great work by Pete Goodliffe
+The Makefile kindly contributed by Richard Hodges (hodges.r@gmail.com).
+
+The script mentioned above in it's turn is based on great work by Pete Goodliffe.
 
 * https://gitorious.org/boostoniphone
 * http://goodliffe.blogspot.com.au/2010/09/building-boost-framework-for-ios-iphone.html
