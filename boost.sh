@@ -176,7 +176,7 @@ downloadBoost()
 unpackBoost()
 {
     echo Unpacking boost into $SRCDIR...
-    [ -d $BOOST_TARBALL ] || ( echo "No such file: $BOOST_TARBALL"; abort )
+    [ -e $BOOST_TARBALL ] || ( echo "No such file: $BOOST_TARBALL"; abort )
     [ -d $SRCDIR ] || mkdir -p $SRCDIR
     [ -d $BOOST_SRC ] || ( cd $SRCDIR; tar xfj $BOOST_TARBALL )
     [ -d $BOOST_SRC ] && echo " ...unpacked as $BOOST_SRC"
