@@ -1,4 +1,5 @@
 # git ignore
+tmp/
 src/
 *.tar.bz2
 *.zip

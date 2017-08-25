@@ -16,8 +16,8 @@
 # @param PROJECT_DERIVED_FILE_DIR is where the boost sources will be unpacked. Created sourcefiles
 
 PROJECT_DIR ?= $(shell pwd)
-PROJECT_TEMP_DIR ?= $(HOME)/tmp/boost-iosx-build
-BUILD_ROOT ?= $(HOME)/tmp/boost-iosx-product
+PROJECT_TEMP_DIR ?= $(PROJECT_DIR)/tmp/boost-iosx-build
+BUILD_ROOT ?= $(PROJECT_DIR)/tmp/boost-iosx-product
 PROJECT_DERIVED_FILE_DIR ?= $(PROJECT_TEMP_DIR)/derived
 PROJECT_PROGRESS_DIR = $(PROJECT_TEMP_DIR)/progress
 
@@ -103,7 +103,7 @@ MACOSX_PREFIX_DIR = $(PROJECT_TEMP_DIR)/$(BOOST_VERSION)/macosx-prefix
 $(BOOTSTRAP_FLAG) : $(INVENTED_HEADERS)
 	cd $(BOOST_SRC) && ./bootstrap.sh --with-libraries=$(subst $(space),$(comma),$(BOOST_LIBS)) --prefix=$(MACOSX_PREFIX_DIR)
 	echo `date -ju` > $(BOOTSTRAP_FLAG)
-    
+
 .PHONY : bootstrap
 bootstrap : $(BOOTSTRAP_FLAG)
 
@@ -112,10 +112,10 @@ bootstrap : $(BOOTSTRAP_FLAG)
 BOOST_USER_CONFIG = $(BOOST_SRC)/tools/build/v2/user-config.jam
 
 IPHONE_OS_PLATFORM_PATH = $(shell xcrun --sdk iphoneos --show-sdk-platform-path)
-ARM_DEV_DIR = $(IPHONE_OS_PLATFORM_PATH)/Developer/usr/bin
+LIPO = xcrun lipo
+AR = xcrun ar
 
 IPHONE_SIMULATOR_PLATFORM_PATH = $(shell xcrun --sdk iphonesimulator --show-sdk-platform-path)
-SIM_DEV_DIR = $(IPHONE_SIMULATOR_PLATFORM_PATH)/Developer/usr/bin
 
 $(BOOST_USER_CONFIG) : $(BOOTSTRAP_FLAG)
 	echo Updating boost into $(BOOST_SRC)...
@@ -196,19 +196,19 @@ $(IOS_LIBBOOST) : $(BUILD_IOS_FLAG)
 # make the unified lib folder
 	$(foreach arch,$(IOS_ARCHITECTURES),mkdir -p $(IOS_UNIFIED_LIB)/$(arch)/obj ;)
 # extract each architecture's individual lib
-	$(foreach lib,$(BOOST_LIBS), $(foreach arch,$(ARM_ARCHITECTURES),$(ARM_DEV_DIR)/lipo "$(IPHONE_STAGE_DIR)/lib/libboost_$(lib).a" -thin $(arch) -o $(IOS_UNIFIED_LIB)/$(arch)/libboost_$(lib).a ; ))
-	$(foreach lib,$(BOOST_LIBS), $(foreach arch,$(SIM_ARCHITECTURES),$(ARM_DEV_DIR)/lipo "$(IPHONESIM_STAGE_DIR)/lib/libboost_$(lib).a" -thin $(arch) -o $(IOS_UNIFIED_LIB)/$(arch)/libboost_$(lib).a ; ))
+	$(foreach lib,$(BOOST_LIBS), $(foreach arch,$(ARM_ARCHITECTURES),$(LIPO) "$(IPHONE_STAGE_DIR)/lib/libboost_$(lib).a" -thin $(arch) -o $(IOS_UNIFIED_LIB)/$(arch)/libboost_$(lib).a ; ))
+	$(foreach lib,$(BOOST_LIBS), $(foreach arch,$(SIM_ARCHITECTURES),$(LIPO) "$(IPHONESIM_STAGE_DIR)/lib/libboost_$(lib).a" -thin $(arch) -o $(IOS_UNIFIED_LIB)/$(arch)/libboost_$(lib).a ; ))
 # extract object files from each architecture's lib, renamed with the libname as a prefix to avoid clashes later on
 	$(foreach lib,$(BOOST_LIBS), $(foreach arch,$(ARM_ARCHITECTURES),$(call unpackArchive,$(IPHONE_BUILD_DIR),$(arch),$(lib),$(IOS_UNIFIED_LIB)/$(arch)/libboost_$(lib).a) ))
 	$(foreach lib,$(BOOST_LIBS), $(foreach arch,$(SIM_ARCHITECTURES),$(call unpackArchive,$(IPHONESIM_BUILD_DIR),$(arch),$(lib),$(IOS_UNIFIED_LIB)/$(arch)/libboost_$(lib).a) ))
 # build one library containing all files
 	rm -f $(IPHONE_BUILD_DIR)/*/libboost.a
-	-$(foreach lib,$(BOOST_LIBS), $(foreach arch,$(ARM_ARCHITECTURES),(cd $(IPHONE_BUILD_DIR)/$(arch); $(ARM_DEV_DIR)/ar crus libboost.a obj/$(lib)/*.o);))
+	-$(foreach lib,$(BOOST_LIBS), $(foreach arch,$(ARM_ARCHITECTURES),(cd $(IPHONE_BUILD_DIR)/$(arch); $(AR) crus libboost.a obj/$(lib)/*.o);))
 	rm -f $(IPHONESIM_BUILD_DIR)/*/libboost.a
 	$(foreach lib,$(BOOST_LIBS), $(foreach arch,$(SIM_ARCHITECTURES),(cd $(IPHONESIM_BUILD_DIR)/$(arch); ar crus libboost.a obj/$(lib)/*.o);))
 # use lipo to build one ios library
 	mkdir -p $(IOS_LIBBOOST_DIR)
-	$(ARM_DEV_DIR)/lipo -create $(foreach arch,$(ARM_ARCHITECTURES),$(IPHONE_BUILD_DIR)/$(arch)/libboost.a) $(foreach arch,$(SIM_ARCHITECTURES),$(IPHONESIM_BUILD_DIR)/$(arch)/libboost.a) -o $(IOS_LIBBOOST)
+	$(LIPO) -create $(foreach arch,$(ARM_ARCHITECTURES),$(IPHONE_BUILD_DIR)/$(arch)/libboost.a) $(foreach arch,$(SIM_ARCHITECTURES),$(IPHONESIM_BUILD_DIR)/$(arch)/libboost.a) -o $(IOS_LIBBOOST)
 
 .PHONY : ios-unified-lib
 ios-unified-lib : $(IOS_LIBBOOST)
@@ -286,7 +286,7 @@ macosx-build : $(BUILD_MACOSX_FLAG)
 macosx-clean :
 	cd $(BOOST_SRC) && ./b2 -j$(CORES) --build-dir=$(MACOSX_BUILD_DIR) --stagedir=$(MACOSX_STAGE_DIR) --prefixdir=$(MACOSX_PREFIX_DIR) toolset=clang cxxflags="-arch i386 -arch x86_64 $(CXX_FLAGS)" linkflags="$(CXX_LINK_FLAGS)" link=static threading=multi clean
 	rm -f $(BUILD_OSX_FLAG)
-    
+
 
 
 # ------------------
@@ -303,15 +303,15 @@ $(MACOSX_LIBBOOST) : $(BUILD_MACOSX_FLAG)
 # make the unified lib folder
 	$(foreach arch,$(MACOSX_ARCHITECTURES),mkdir -p $(MACOSX_UNIFIED_LIB)/$(arch)/obj ;)
 # extract each architecture's individual lib
-	$(foreach lib,$(BOOST_LIBS), $(foreach arch,$(MACOSX_ARCHITECTURES),$(ARM_DEV_DIR)/lipo "$(MACOSX_STAGE_DIR)/lib/libboost_$(lib).a" -thin $(arch) -o $(MACOSX_UNIFIED_LIB)/$(arch)/libboost_$(lib).a ; ))
+	$(foreach lib,$(BOOST_LIBS), $(foreach arch,$(MACOSX_ARCHITECTURES),$(LIPO) "$(MACOSX_STAGE_DIR)/lib/libboost_$(lib).a" -thin $(arch) -o $(MACOSX_UNIFIED_LIB)/$(arch)/libboost_$(lib).a ; ))
 # extract object files from each architecture's lib, renamed with the libname as a prefix to avoid clashes later on
 	$(foreach lib,$(BOOST_LIBS), $(foreach arch,$(MACOSX_ARCHITECTURES),$(call unpackArchive,$(MACOSX_BUILD_DIR),$(arch),$(lib),$(MACOSX_UNIFIED_LIB)/$(arch)/libboost_$(lib).a) ))
 # build one library containing all files
 	-rm -f $(MACOSX_BUILD_DIR)/*/libboost.a
-	-$(foreach lib,$(BOOST_LIBS), $(foreach arch,$(MACOSX_ARCHITECTURES),(cd $(MACOSX_BUILD_DIR)/$(arch); $(ARM_DEV_DIR)/ar crus libboost.a obj/$(lib)/*.o);))
+	-$(foreach lib,$(BOOST_LIBS), $(foreach arch,$(MACOSX_ARCHITECTURES),(cd $(MACOSX_BUILD_DIR)/$(arch); $(AR) crus libboost.a obj/$(lib)/*.o);))
 # use lipo to build one macosx library
 	mkdir -p $(MACOSX_LIBBOOST_DIR)
-	$(ARM_DEV_DIR)/lipo -create $(foreach arch,$(MACOSX_ARCHITECTURES),$(MACOSX_BUILD_DIR)/$(arch)/libboost.a) -o $(MACOSX_LIBBOOST)
+	$(LIPO) -create $(foreach arch,$(MACOSX_ARCHITECTURES),$(MACOSX_BUILD_DIR)/$(arch)/libboost.a) -o $(MACOSX_LIBBOOST)
 
 .PHONY : macosx-unified-lib
 macosx-unified-lib : $(MACOSX_LIBBOOST)
@@ -372,4 +372,3 @@ clean:
 	-rm -rf $(PROJECT_TEMP_DIR)
 	-rm -rf $(IOS_BUNDLE_DIR)
 	-rm -rf $(MACOSX_BUNDLE_DIR)
-
